@@ -13,9 +13,9 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 
 ## Current phase
 
-- **Phase**: Part 4 — Implement Skills
+- **Phase**: Part 5 — Visual Effects
 - **Status**: Completed
-- **Updated at**: 2026-05-02
+- **Updated at**: 2026-05-03
 
 ## Progress entries
 
@@ -79,4 +79,14 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
   - `src/skills/types/*`
   - `src/skills/definitions/*`
   - `src/main.js`
+
+### 2026-05-03 — Part 5: Visual Effects
+
+- **Done**:
+  - Projectile trail, explosion ring animation, aura pulse.
+  - Status indicators (burn/slow/stun dots above ball).
+  - Screen shake on big collisions/skill hits.
+- **Key files**:
+  - `src/vfx/VFXManager.js`
+  - `src/engine/Game.js`
 

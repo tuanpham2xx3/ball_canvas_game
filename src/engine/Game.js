@@ -15,6 +15,7 @@ import { DamageText } from '../ui/DamageText.js';
 import { randomAngle } from '../utils/MathUtils.js';
 import { SkillRegistry } from '../skills/SkillRegistry.js';
 import { SKILL_DEFINITIONS } from '../skills/definitions/index.js';
+import { VFXManager } from '../vfx/VFXManager.js';
 
 /**
  * Game states
@@ -39,6 +40,7 @@ export class Game {
     this.hud = null;
     this.damageText = null;
     this.skillRegistry = new SkillRegistry();
+    this.vfx = null;
 
     /** @type {Ball[]} */
     this.balls = [];
@@ -78,6 +80,8 @@ export class Game {
     // Init subsystems
     this.hud = new HUD(this.app, this.eventBus);
     this.damageText = new DamageText(this.app);
+    this.vfx = new VFXManager(this.app);
+    this.vfx.attach(this.app.stage);
 
     // Skill definitions
     this.skillRegistry.registerMany(SKILL_DEFINITIONS);
@@ -90,10 +94,16 @@ export class Game {
       if (data.dmgToB > 0) {
         this.damageText.spawn(data.ballB.x, data.ballB.y, data.dmgToB, 'physical');
       }
+
+      // Screen shake on big hits
+      const big = Math.max(data.dmgToA || 0, data.dmgToB || 0);
+      if (big >= 900) this.vfx.shake(10, 140);
+      else if (big >= 500) this.vfx.shake(7, 110);
     });
 
     this.eventBus.on('skillHit', (data) => {
       if (data?.amount > 0) this.damageText.spawn(data.x, data.y, data.amount, data.type || 'skill');
+      if (data?.amount >= 700) this.vfx.shake(8, 120);
     });
 
     // Game loop
@@ -132,6 +142,9 @@ export class Game {
     this.balls.push(ball);
     this.app.stage.addChild(ball.container);
     this.hud.addBall(ball);
+    // Always-on indicators
+    this.vfx.statusIndicator(ball);
+    this.vfx.auraForBall(ball, ball.skin.glow);
     return ball;
   }
 
@@ -225,6 +238,8 @@ export class Game {
         const dealt = b.takeDamage(p.damage, p.owner, 'skill');
         if (dealt > 0) this.eventBus.emit('skillHit', { x: b.x, y: b.y, amount: dealt, type: 'skill' });
         if (p.debuff) b.applyStatusEffect({ ...p.debuff, source: p.owner });
+        // Impact VFX
+        this.vfx.explosionRing(b.x, b.y, 26 + b.radius, Number(p._g?.fill?.color) || 0xff8c00, 220);
         p.isAlive = false;
         this._removeProjectileAt(i);
         break;
@@ -245,6 +260,7 @@ export class Game {
         const dealt = b.takeDamage(m.damage, m.owner, 'skill');
         if (dealt > 0) this.eventBus.emit('skillHit', { x: b.x, y: b.y, amount: dealt, type: 'skill' });
         if (m.debuff) b.applyStatusEffect({ ...m.debuff, source: m.owner });
+        this.vfx.explosionRing(m.x, m.y, m.triggerRadius, 0x22c55e, 240);
         m.isAlive = false;
         this._removeMineAt(i);
         break;
@@ -256,6 +272,7 @@ export class Game {
 
     // Damage text update
     this.damageText.update();
+    this.vfx.update(dt);
 
     // Check win condition
     this._checkGameOver();
@@ -430,6 +447,9 @@ export class Game {
     }
     this.mines = [];
 
+    // Clear VFX
+    this.vfx?.clear();
+
     // Clear HUD
     this.hud.destroy();
     this.hud = new HUD(this.app, this.eventBus);
@@ -456,6 +476,8 @@ export class Game {
     const p = new Projectile(opts);
     this.projectiles.push(p);
     this.app.stage.addChild(p.container);
+    // Trail
+    this.vfx.trailForProjectile(p, opts?.color ?? 0xff8c00);
     return p;
   }
 
@@ -467,11 +489,8 @@ export class Game {
   }
 
   applyAoe({ owner, x, y, radius, damage, debuff, color }) {
-    const ring = new Graphics();
-    ring.circle(x, y, radius);
-    ring.stroke({ color: color ?? 0xfbbf24, alpha: 0.5, width: 2 });
-    this.app.stage.addChild(ring);
-    setTimeout(() => ring.destroy(), 220);
+    this.vfx.explosionRing(x, y, radius, color ?? 0xfbbf24, 240);
+    this.vfx.shake(Math.min(12, 6 + radius / 30), 130);
 
     for (const b of this.balls) {
       if (!b.isAlive) continue;
