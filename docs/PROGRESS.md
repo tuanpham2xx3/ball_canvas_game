@@ -13,7 +13,7 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 
 ## Current phase
 
-- **Phase**: Part 2 — Skill Infrastructure
+- **Phase**: Part 3 — Builder Page
 - **Status**: Completed
 - **Updated at**: 2026-05-02
 
@@ -49,4 +49,17 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
   - `src/skills/effects/*`
   - `src/skills/definitions/_template.json`
   - `src/entities/Ball.js`
+
+### 2026-05-02 — Part 3: Builder Page
+
+- **Done**: Thêm trang Builder để tạo/edit ball (name, colors, stats), templates, save/load localStorage, export/import JSON.
+- **Arena integration**: Trang Arena có match picker (Ball A/B) để load 2 balls đã lưu vào trận.
+- **Key files**:
+  - `builder.html`
+  - `src/builder-main.js`
+  - `src/ui/Builder.js`
+  - `src/main.js`
+  - `index.html`
+  - `vite.config.js`
+  - `style.css`
 

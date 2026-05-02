@@ -15,9 +15,20 @@
     <p class="subtitle">PixiJS • 1v1 • Physics Combat</p>
     <div id="game-container"></div>
     <div id="controls">
+      <a class="link-btn" href="/builder.html" title="Build your balls">🧪 Builder</a>
       <button id="btn-start" title="Start match">▶ Start</button>
       <button id="btn-reset" title="New match">🔄 Reset</button>
       <button id="btn-gravity" title="Toggle gravity">🌍 Gravity: ON</button>
+    </div>
+    <div id="match-picker" class="match-picker" aria-label="Match picker">
+      <div class="picker">
+        <label for="sel-a">Ball A</label>
+        <select id="sel-a" class="select"></select>
+      </div>
+      <div class="picker">
+        <label for="sel-b">Ball B</label>
+        <select id="sel-b" class="select"></select>
+      </div>
     </div>
   </div>
   <script type="module" src="/src/main.js"></script>
