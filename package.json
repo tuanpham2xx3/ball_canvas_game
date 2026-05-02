@@ -1,0 +1,18 @@
+{
+  "name": "balls-arena",
+  "version": "1.0.0",
+  "description": "1v1 balls arena game with PixiJS",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pixi.js": "^8.18.1",
+    "vite": "^8.0.10"
+  }
+}
