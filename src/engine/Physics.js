@@ -143,8 +143,12 @@ export class Physics {
 
     // --- DAMAGE ---
     // Each ball takes damage based on the OTHER ball's ATK × impactSpeed
-    const dmgToA = a.takeDamage(b.atk * impactSpeed * 0.1, b, 'physical');
-    const dmgToB = b.takeDamage(a.atk * impactSpeed * 0.1, a, 'physical');
+    // Plan formula:
+    // rawDamage = attacker.atk × impactSpeed
+    // finalDamage = max(1, rawDamage - defender.def)
+    // (DEF reduction is applied in Ball.takeDamage)
+    const dmgToA = a.takeDamage(b.atk * impactSpeed, b, 'physical');
+    const dmgToB = b.takeDamage(a.atk * impactSpeed, a, 'physical');
 
     // Track hits
     a.hits++;

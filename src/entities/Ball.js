@@ -4,6 +4,7 @@
 
 import { Graphics, Container, Text } from 'pixi.js';
 import { DEFAULT_BALL_STATS } from '../config.js';
+import { SkillRunner } from '../skills/SkillRunner.js';
 
 let ballIdCounter = 0;
 
@@ -60,6 +61,7 @@ export class Ball {
     // Skills placeholder (Part 2)
     this.skills = [];
     this.statusEffects = [];
+    this.skillRunner = new SkillRunner(this);
 
     // AI target reference (set by Game)
     this.target = null;
@@ -204,6 +206,9 @@ export class Ball {
     if (!this.isAlive) {
       this.container.alpha = Math.max(0.2, this.container.alpha - 0.02);
     }
+
+    // Skills (Part 2 scaffolding)
+    this.skillRunner.update(dt);
   }
 
   /** Get HP percentage [0, 1]. */

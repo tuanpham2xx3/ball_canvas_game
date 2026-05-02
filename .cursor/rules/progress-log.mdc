@@ -1,0 +1,23 @@
+---
+description: Keep a running progress log in docs/PROGRESS.md
+alwaysApply: true
+---
+
+# Progress logging rule
+
+This project maintains a progress log at `docs/PROGRESS.md`.
+
+## When making changes
+
+- After completing any meaningful task/feature/bugfix, **append** a new entry under **Progress entries** in `docs/PROGRESS.md`.
+- Each entry must include:
+  - What was done (1–3 bullets)
+  - Which roadmap part/task it maps to (from `docs/implementation_plan.md`)
+  - Key files touched
+  - Commit hash if a commit was created
+
+## Format
+
+- Use a dated heading like: `### YYYY-MM-DD — Part X: <name>`
+- Keep entries concise; do not rewrite past entries.
+

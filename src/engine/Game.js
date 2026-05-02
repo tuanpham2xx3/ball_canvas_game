@@ -4,7 +4,7 @@
    ============================================================ */
 
 import { Application, Graphics, Text, Container } from 'pixi.js';
-import { ARENA, PHYSICS } from '../config.js';
+import { ARENA, GAME, PHYSICS } from '../config.js';
 import { EventBus } from '../utils/EventBus.js';
 import { Physics } from './Physics.js';
 import { Ball } from '../entities/Ball.js';
@@ -18,6 +18,7 @@ import { randomAngle } from '../utils/MathUtils.js';
  */
 const STATE = {
   IDLE: 'idle',
+  STARTING: 'starting',
   PLAYING: 'playing',
   GAME_OVER: 'gameOver',
 };
@@ -42,6 +43,8 @@ export class Game {
     // UI refs
     this._arenaGraphic = null;
     this._gameOverContainer = null;
+    this._countdownText = null;
+    this._countdownRemainingMs = 0;
   }
 
   /**
@@ -145,17 +148,40 @@ export class Game {
     ballA.target = ballB;
     ballB.target = ballA;
 
-    this.state = STATE.PLAYING;
-    this.eventBus.emit('matchStart', { ballA, ballB });
+    const countdownMs = Math.max(0, Number(GAME.COUNTDOWN_MS) || 0);
+    if (countdownMs > 0) {
+      this.state = STATE.STARTING;
+      this._countdownRemainingMs = countdownMs;
+      this._showCountdownOverlay(Math.ceil(countdownMs / 1000));
+      this.eventBus.emit('matchStarting', { ballA, ballB, countdownMs });
+    } else {
+      this.state = STATE.PLAYING;
+      this.eventBus.emit('matchStart', { ballA, ballB });
+    }
   }
 
   /**
    * Main game loop.
    */
   _gameLoop(ticker) {
-    if (this.state !== STATE.PLAYING) return;
-
     const dt = ticker.deltaMS;
+
+    // Countdown phase (no physics updates)
+    if (this.state === STATE.STARTING) {
+      this._countdownRemainingMs -= dt;
+      const secs = Math.max(0, Math.ceil(this._countdownRemainingMs / 1000));
+      this._updateCountdownOverlay(secs);
+      this.eventBus.emit('countdown', { secondsLeft: secs });
+
+      if (this._countdownRemainingMs <= 0) {
+        this._hideCountdownOverlay();
+        this.state = STATE.PLAYING;
+        this.eventBus.emit('matchStart', { ballA: this.balls[0], ballB: this.balls[1] });
+      }
+      return;
+    }
+
+    if (this.state !== STATE.PLAYING) return;
 
     // Physics update
     this.physics.update(this.balls, dt);
@@ -281,6 +307,44 @@ export class Game {
     this._gameOverContainer = container;
   }
 
+  _showCountdownOverlay(seconds) {
+    if (this._countdownText) {
+      this._countdownText.text = `${seconds}`;
+      this._countdownText.visible = true;
+      return;
+    }
+
+    const t = new Text({
+      text: `${seconds}`,
+      style: {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: 64,
+        fontWeight: '800',
+        fill: 0xffffff,
+        align: 'center',
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowDistance: 4,
+      },
+    });
+    t.anchor.set(0.5);
+    t.x = ARENA.SIZE / 2;
+    t.y = ARENA.SIZE / 2;
+    this.app.stage.addChild(t);
+    this._countdownText = t;
+  }
+
+  _updateCountdownOverlay(seconds) {
+    if (!this._countdownText) return;
+    this._countdownText.text = seconds > 0 ? `${seconds}` : 'FIGHT!';
+    this._countdownText.alpha = seconds > 0 ? 1 : 0.95;
+  }
+
+  _hideCountdownOverlay() {
+    if (!this._countdownText) return;
+    this._countdownText.visible = false;
+  }
+
   /**
    * Reset the game state.
    */
@@ -305,6 +369,10 @@ export class Game {
       this._gameOverContainer.destroy({ children: true });
       this._gameOverContainer = null;
     }
+
+    // Hide countdown
+    this._hideCountdownOverlay();
+    this._countdownRemainingMs = 0;
 
     this.winner = null;
     this.state = STATE.IDLE;

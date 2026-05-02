@@ -1,0 +1,24 @@
+{
+  "id": "skill_template",
+  "name": "Skill Template",
+  "description": "Describe what this skill does",
+  "type": "projectile",
+  "cooldown": 3000,
+  "damage": 100,
+  "speed": 8,
+  "range": 250,
+  "duration": 0,
+  "debuff": null,
+  "effect": {
+    "color": "0xff4500",
+    "glowColor": "0xff6b35",
+    "radius": 10,
+    "trail": false,
+    "onHit": null
+  },
+  "ai": {
+    "castRange": 250,
+    "priority": 0
+  }
+}
+

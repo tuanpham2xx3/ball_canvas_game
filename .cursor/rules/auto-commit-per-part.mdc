@@ -1,0 +1,23 @@
+---
+description: Create a git commit after completing each roadmap part
+alwaysApply: true
+---
+
+# Auto-commit after finishing a roadmap part
+
+When a full roadmap **Part** (as defined in `docs/implementation_plan.md`) is completed, create a git commit for the finished work.
+
+## Rules
+
+- **Commit only after a Part is complete**, not after every small change.
+- **Do not push** to any remote unless the user explicitly asks.
+- Before committing, run:
+  - `git status`
+  - `git diff`
+  - `git log -1 --oneline`
+- Stage only relevant files (avoid committing secrets like `.env`).
+- Use a commit message that clearly references the Part, e.g.:
+  - `Part 1: core engine complete`
+  - `Part 2: skill infrastructure scaffolding`
+- After commit, update `docs/PROGRESS.md` entry for that Part with the **commit hash**.
+

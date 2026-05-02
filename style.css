@@ -121,13 +121,10 @@ h1 {
     width: 92vw;
     height: 92vw;
   }
-
   h1 { font-size: 1.5rem; }
-
   #controls {
     flex-wrap: wrap;
   }
-
   #controls button {
     flex: 1;
     min-width: 100px;
