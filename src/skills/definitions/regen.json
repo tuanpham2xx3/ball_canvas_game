@@ -1,0 +1,10 @@
+{
+  "id": "regen",
+  "name": "💚 Regen",
+  "description": "Hồi HP theo thời gian",
+  "type": "passive",
+  "passive": "regen",
+  "amountPerSecond": 120,
+  "ai": { "priority": 0 }
+}
+

@@ -29,7 +29,8 @@ export class Ball {
     this.hp = s.maxHp;
     this.atk = s.atk;
     this.def = s.def;
-    this.speedMul = s.speed; // multiplier for constant accel
+    this.baseSpeedMul = s.speed; // multiplier for constant accel
+    this._speedMulBonus = 0; // additive bonus (e.g. buffs), expressed as multiplier delta
     this.radius = s.radius;
     this.mass = s.radius * s.radius; // proportional to area
 
@@ -59,9 +60,14 @@ export class Ball {
     this.flashTimer = 0;
 
     // Skills placeholder (Part 2)
-    this.skills = [];
+    this.skills = Array.isArray(opts.skills) ? opts.skills : [];
     this.statusEffects = [];
     this.skillRunner = new SkillRunner(this);
+    this.game = null; // set by Game when added
+
+    // Status aggregations (computed from statusEffects)
+    this._slowMul = 1;
+    this._stunRemainingMs = 0;
 
     // AI target reference (set by Game)
     this.target = null;
@@ -145,6 +151,15 @@ export class Ball {
         const healAmt = Math.round(actual * source.lifesteal / 100);
         source.heal(healAmt);
       }
+
+      // Thorns (passive reflect)
+      if (this.thorns && this.thorns > 0) {
+        const reflect = Math.max(1, Math.round(actual * (this.thorns / 100)));
+        source.takeDamage(reflect + 0, null, 'thorns');
+        if (this.game) {
+          this.game.eventBus.emit('skillHit', { x: source.x, y: source.y, amount: reflect, type: 'skill' });
+        }
+      }
     }
 
     if (this.hp <= 0) {
@@ -207,8 +222,143 @@ export class Ball {
       this.container.alpha = Math.max(0.2, this.container.alpha - 0.02);
     }
 
+    // Status effects (Part 4)
+    this._updateStatusEffects(dt);
+    this._tickPassives(dt);
+
     // Skills (Part 2 scaffolding)
     this.skillRunner.update(dt);
+  }
+
+  /**
+   * Apply a timed status effect.
+   * @param {object} effect
+   * @param {string} effect.type - 'burn' | 'slow' | 'stun'
+   * @param {number} effect.duration
+   */
+  applyStatusEffect(effect) {
+    if (!effect || !effect.type) return;
+    const now = Date.now();
+    const e = {
+      id: effect.id || `${effect.type}_${now}_${Math.random().toString(16).slice(2)}`,
+      type: effect.type,
+      remainingMs: Math.max(0, Number(effect.duration) || 0),
+      source: effect.source || null,
+      // burn
+      damage: Number(effect.damage) || 0,
+      tickRate: Math.max(50, Number(effect.tickRate) || 1000),
+      _tickAccMs: 0,
+      // slow
+      slowMul: clampMul(effect.slowMul, 0.2, 1),
+      // stun
+      stun: true,
+    };
+
+    // Simple stacking rule: same type refreshes if stronger/longer
+    const idx = this.statusEffects.findIndex((x) => x.type === e.type);
+    if (idx >= 0) {
+      const cur = this.statusEffects[idx];
+      cur.remainingMs = Math.max(cur.remainingMs, e.remainingMs);
+      if (e.type === 'burn') cur.damage = Math.max(cur.damage, e.damage);
+      if (e.type === 'burn') cur.tickRate = Math.min(cur.tickRate, e.tickRate);
+      if (e.type === 'slow') cur.slowMul = Math.min(cur.slowMul, e.slowMul);
+      return;
+    }
+    this.statusEffects.push(e);
+  }
+
+  _updateStatusEffects(dt) {
+    if (!this.isAlive) return;
+
+    let slowMul = 1;
+    let stunRemaining = 0;
+
+    for (let i = this.statusEffects.length - 1; i >= 0; i--) {
+      const e = this.statusEffects[i];
+      e.remainingMs -= dt;
+
+      if (e.type === 'burn') {
+        e._tickAccMs += dt;
+        while (e._tickAccMs >= e.tickRate && e.remainingMs > 0) {
+          e._tickAccMs -= e.tickRate;
+          const dmg = Math.max(1, Math.round(e.damage));
+          if (dmg > 0) {
+            this.takeDamage(dmg, e.source || null, 'burn');
+            if (this.game) {
+              this.game.eventBus.emit('skillHit', { x: this.x, y: this.y, amount: dmg, type: 'skill' });
+            }
+          }
+        }
+      }
+
+      if (e.type === 'slow') {
+        slowMul = Math.min(slowMul, e.slowMul || 1);
+      }
+
+      if (e.type === 'stun') {
+        stunRemaining = Math.max(stunRemaining, e.remainingMs);
+      }
+
+      if (e.remainingMs <= 0) {
+        if (e.type === 'buff' && typeof e._revert === 'function') {
+          e._revert();
+        }
+        this.statusEffects.splice(i, 1);
+      }
+    }
+
+    this._slowMul = slowMul;
+    this._stunRemainingMs = Math.max(0, stunRemaining);
+  }
+
+  /** Effective speed multiplier with debuffs/buffs applied. */
+  get speedMul() {
+    return Math.max(0.05, (this.baseSpeedMul + this._speedMulBonus) * this._slowMul);
+  }
+
+  get isStunned() {
+    return this._stunRemainingMs > 0;
+  }
+
+  /** Temporary stat modifiers (Buffs). */
+  addTempStatMul({ atkMul = 0, defMul = 0, speedMul = 0, durationMs = 0 } = {}) {
+    const id = `buff_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const baseAtk = this.atk;
+    const baseDef = this.def;
+    const baseSpeed = this._speedMulBonus;
+
+    this.atk = Math.round(this.atk * (1 + atkMul));
+    this.def = Math.round(this.def * (1 + defMul));
+    this._speedMulBonus += speedMul;
+
+    this.statusEffects.push({
+      id,
+      type: 'buff',
+      remainingMs: Math.max(0, Number(durationMs) || 0),
+      _revert: () => {
+        this.atk = baseAtk;
+        this.def = baseDef;
+        this._speedMulBonus = baseSpeed;
+      },
+    });
+  }
+
+  get thorns() {
+    return Number(this._thornsPct) || 0;
+  }
+
+  set thorns(v) {
+    this._thornsPct = Number(v) || 0;
+  }
+
+  regen(amountPerSecond) {
+    this._regenPerSecond = Number(amountPerSecond) || 0;
+  }
+
+  _tickPassives(dt) {
+    if (!this._regenPerSecond) return;
+    const healAmt = (this._regenPerSecond * dt) / 1000;
+    if (healAmt > 0) this.heal(Math.round(healAmt));
   }
 
   /** Get HP percentage [0, 1]. */
@@ -220,4 +370,10 @@ export class Ball {
   isDead() {
     return !this.isAlive;
   }
+}
+
+function clampMul(v, min, max) {
+  const x = Number(v);
+  if (!Number.isFinite(x)) return 1;
+  return Math.min(max, Math.max(min, x));
 }

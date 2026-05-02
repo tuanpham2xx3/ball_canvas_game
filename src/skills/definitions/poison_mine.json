@@ -1,0 +1,19 @@
+{
+  "id": "poison_mine",
+  "name": "☠️ Poison Mine",
+  "description": "Rải mìn, nổ gây damage + burn",
+  "type": "mine",
+  "cooldown": 4200,
+  "damage": 360,
+  "triggerRadius": 34,
+  "duration": 12000,
+  "debuff": {
+    "type": "burn",
+    "damage": 90,
+    "duration": 4000,
+    "tickRate": 1000
+  },
+  "effect": { "color": "0x22c55e", "radius": 8 },
+  "ai": { "priority": 3 }
+}
+

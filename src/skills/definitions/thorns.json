@@ -1,0 +1,10 @@
+{
+  "id": "thorns",
+  "name": "🌵 Thorns",
+  "description": "Phản damage khi bị đánh",
+  "type": "passive",
+  "passive": "thorns",
+  "reflectPct": 12,
+  "ai": { "priority": 0 }
+}
+

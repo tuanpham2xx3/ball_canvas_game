@@ -32,9 +32,15 @@ export class Physics {
       // Gravity
       ball.vy += GRAVITY;
 
+      // Stun: reduce control (no constant accel), add dampening
+      if (ball.isStunned) {
+        ball.vx *= 0.985;
+        ball.vy *= 0.985;
+      }
+
       // Constant acceleration in movement direction
       const speed = magnitude(ball.vx, ball.vy);
-      if (speed > 0.01) {
+      if (!ball.isStunned && speed > 0.01) {
         const dirX = ball.vx / speed;
         const dirY = ball.vy / speed;
         const accel = speed < MIN_SPEED
@@ -42,7 +48,7 @@ export class Physics {
           : CONSTANT_ACCEL * ball.speedMul;
         ball.vx += dirX * accel;
         ball.vy += dirY * accel;
-      } else {
+      } else if (!ball.isStunned) {
         // Nearly stopped → random kick
         const kickAngle = Math.random() * Math.PI * 2;
         ball.vx = Math.cos(kickAngle) * MIN_SPEED;

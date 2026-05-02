@@ -1,0 +1,35 @@
+{
+  "id": "fireball",
+  "name": "🔥 Fireball",
+  "description": "Bắn cầu lửa gây damage và burn",
+  "type": "projectile",
+  "cooldown": 2200,
+  "damage": 420,
+  "speed": 9,
+  "range": 320,
+  "duration": 3500,
+  "debuff": {
+    "type": "burn",
+    "damage": 120,
+    "duration": 3500,
+    "tickRate": 1000
+  },
+  "effect": {
+    "color": "0xff4500",
+    "glowColor": "0xff6b35",
+    "radius": 10,
+    "trail": true,
+    "trailLength": 8,
+    "onHit": {
+      "type": "explosion",
+      "radius": 38,
+      "color": "0xff8c00",
+      "duration": 220
+    }
+  },
+  "ai": {
+    "castRange": 260,
+    "priority": 8
+  }
+}
+

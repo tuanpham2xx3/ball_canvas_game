@@ -1,0 +1,13 @@
+{
+  "id": "rage",
+  "name": "😡 Rage",
+  "description": "Tăng ATK tạm thời",
+  "type": "buff",
+  "cooldown": 4200,
+  "duration": 2200,
+  "atkMul": 0.35,
+  "defMul": 0,
+  "speedMul": 0,
+  "ai": { "priority": 5 }
+}
+

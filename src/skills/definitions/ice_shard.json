@@ -1,0 +1,34 @@
+{
+  "id": "ice_shard",
+  "name": "❄️ Ice Shard",
+  "description": "Bắn băng gây damage và slow",
+  "type": "projectile",
+  "cooldown": 1800,
+  "damage": 320,
+  "speed": 10,
+  "range": 320,
+  "duration": 3200,
+  "debuff": {
+    "type": "slow",
+    "slowMul": 0.65,
+    "duration": 2200
+  },
+  "effect": {
+    "color": "0x60a5fa",
+    "glowColor": "0x38bdf8",
+    "radius": 9,
+    "trail": true,
+    "trailLength": 6,
+    "onHit": {
+      "type": "explosion",
+      "radius": 28,
+      "color": "0x93c5fd",
+      "duration": 180
+    }
+  },
+  "ai": {
+    "castRange": 260,
+    "priority": 7
+  }
+}
+

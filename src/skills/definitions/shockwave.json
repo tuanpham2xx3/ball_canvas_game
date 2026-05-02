@@ -1,0 +1,21 @@
+{
+  "id": "shockwave",
+  "name": "💥 Shockwave",
+  "description": "AoE quanh bản thân gây damage",
+  "type": "aoe",
+  "cooldown": 3500,
+  "damage": 520,
+  "radius": 80,
+  "duration": 0,
+  "debuff": null,
+  "effect": {
+    "onHit": {
+      "type": "explosion",
+      "radius": 80,
+      "color": "0xfbbf24",
+      "duration": 240
+    }
+  },
+  "ai": { "priority": 6 }
+}
+

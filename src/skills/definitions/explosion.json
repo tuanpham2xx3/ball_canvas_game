@@ -1,0 +1,21 @@
+{
+  "id": "explosion",
+  "name": "💣 Explosion",
+  "description": "AoE mạnh + stun nhẹ",
+  "type": "aoe",
+  "cooldown": 5200,
+  "damage": 780,
+  "radius": 95,
+  "duration": 0,
+  "debuff": { "type": "stun", "duration": 650 },
+  "effect": {
+    "onHit": {
+      "type": "explosion",
+      "radius": 95,
+      "color": "0xf97316",
+      "duration": 260
+    }
+  },
+  "ai": { "priority": 6 }
+}
+

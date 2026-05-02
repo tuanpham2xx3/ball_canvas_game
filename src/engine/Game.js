@@ -8,9 +8,13 @@ import { ARENA, GAME, PHYSICS } from '../config.js';
 import { EventBus } from '../utils/EventBus.js';
 import { Physics } from './Physics.js';
 import { Ball } from '../entities/Ball.js';
+import { Projectile } from '../entities/Projectile.js';
+import { Mine } from '../entities/Mine.js';
 import { HUD } from '../ui/HUD.js';
 import { DamageText } from '../ui/DamageText.js';
 import { randomAngle } from '../utils/MathUtils.js';
+import { SkillRegistry } from '../skills/SkillRegistry.js';
+import { SKILL_DEFINITIONS } from '../skills/definitions/index.js';
 
 /**
  * Game states
@@ -34,9 +38,14 @@ export class Game {
     this.physics = new Physics(this.eventBus);
     this.hud = null;
     this.damageText = null;
+    this.skillRegistry = new SkillRegistry();
 
     /** @type {Ball[]} */
     this.balls = [];
+    /** @type {Projectile[]} */
+    this.projectiles = [];
+    /** @type {Mine[]} */
+    this.mines = [];
     this.state = STATE.IDLE;
     this.winner = null;
 
@@ -70,6 +79,9 @@ export class Game {
     this.hud = new HUD(this.app, this.eventBus);
     this.damageText = new DamageText(this.app);
 
+    // Skill definitions
+    this.skillRegistry.registerMany(SKILL_DEFINITIONS);
+
     // Listen for collision events → spawn damage text
     this.eventBus.on('collision', (data) => {
       if (data.dmgToA > 0) {
@@ -78,6 +90,10 @@ export class Game {
       if (data.dmgToB > 0) {
         this.damageText.spawn(data.ballB.x, data.ballB.y, data.dmgToB, 'physical');
       }
+    });
+
+    this.eventBus.on('skillHit', (data) => {
+      if (data?.amount > 0) this.damageText.spawn(data.x, data.y, data.amount, data.type || 'skill');
     });
 
     // Game loop
@@ -109,6 +125,10 @@ export class Game {
    */
   addBall(config) {
     const ball = new Ball(config);
+    ball.game = this;
+
+    // Skills: allow ids or inline defs
+    ball.skills = this.skillRegistry.createMany(config.skills || [], ball);
     this.balls.push(ball);
     this.app.stage.addChild(ball.container);
     this.hud.addBall(ball);
@@ -189,6 +209,46 @@ export class Game {
     // Ball updates
     for (const ball of this.balls) {
       ball.update(dt);
+    }
+
+    // Projectiles update + collisions
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      p.update(dt);
+      if (!p.isAlive) {
+        this._removeProjectileAt(i);
+        continue;
+      }
+      for (const b of this.balls) {
+        if (!b.isAlive) continue;
+        if (!p.hitsBall(b)) continue;
+        const dealt = b.takeDamage(p.damage, p.owner, 'skill');
+        if (dealt > 0) this.eventBus.emit('skillHit', { x: b.x, y: b.y, amount: dealt, type: 'skill' });
+        if (p.debuff) b.applyStatusEffect({ ...p.debuff, source: p.owner });
+        p.isAlive = false;
+        this._removeProjectileAt(i);
+        break;
+      }
+    }
+
+    // Mines update + trigger
+    for (let i = this.mines.length - 1; i >= 0; i--) {
+      const m = this.mines[i];
+      m.update(dt);
+      if (!m.isAlive) {
+        this._removeMineAt(i);
+        continue;
+      }
+      for (const b of this.balls) {
+        if (!b.isAlive) continue;
+        if (!m.isTriggeredBy(b)) continue;
+        const dealt = b.takeDamage(m.damage, m.owner, 'skill');
+        if (dealt > 0) this.eventBus.emit('skillHit', { x: b.x, y: b.y, amount: dealt, type: 'skill' });
+        if (m.debuff) b.applyStatusEffect({ ...m.debuff, source: m.owner });
+        m.isAlive = false;
+        this._removeMineAt(i);
+        break;
+      }
     }
 
     // HUD update
@@ -356,6 +416,20 @@ export class Game {
     }
     this.balls = [];
 
+    // Remove projectiles
+    for (const p of this.projectiles) {
+      this.app.stage.removeChild(p.container);
+      p.destroy();
+    }
+    this.projectiles = [];
+
+    // Remove mines
+    for (const m of this.mines) {
+      this.app.stage.removeChild(m.container);
+      m.destroy();
+    }
+    this.mines = [];
+
     // Clear HUD
     this.hud.destroy();
     this.hud = new HUD(this.app, this.eventBus);
@@ -376,6 +450,55 @@ export class Game {
 
     this.winner = null;
     this.state = STATE.IDLE;
+  }
+
+  spawnProjectile(opts) {
+    const p = new Projectile(opts);
+    this.projectiles.push(p);
+    this.app.stage.addChild(p.container);
+    return p;
+  }
+
+  spawnMine(opts) {
+    const m = new Mine(opts);
+    this.mines.push(m);
+    this.app.stage.addChild(m.container);
+    return m;
+  }
+
+  applyAoe({ owner, x, y, radius, damage, debuff, color }) {
+    const ring = new Graphics();
+    ring.circle(x, y, radius);
+    ring.stroke({ color: color ?? 0xfbbf24, alpha: 0.5, width: 2 });
+    this.app.stage.addChild(ring);
+    setTimeout(() => ring.destroy(), 220);
+
+    for (const b of this.balls) {
+      if (!b.isAlive) continue;
+      if (b === owner) continue;
+      const dx = b.x - x;
+      const dy = b.y - y;
+      if (dx * dx + dy * dy > radius * radius) continue;
+      const dealt = b.takeDamage(damage, owner, 'skill');
+      if (dealt > 0) this.eventBus.emit('skillHit', { x: b.x, y: b.y, amount: dealt, type: 'skill' });
+      if (debuff) b.applyStatusEffect({ ...debuff, source: owner });
+    }
+  }
+
+  _removeProjectileAt(i) {
+    const p = this.projectiles[i];
+    if (!p) return;
+    this.app.stage.removeChild(p.container);
+    p.destroy();
+    this.projectiles.splice(i, 1);
+  }
+
+  _removeMineAt(i) {
+    const m = this.mines[i];
+    if (!m) return;
+    this.app.stage.removeChild(m.container);
+    m.destroy();
+    this.mines.splice(i, 1);
   }
 
   /**

@@ -13,7 +13,7 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 
 ## Current phase
 
-- **Phase**: Part 3 — Builder Page
+- **Phase**: Part 4 — Implement Skills
 - **Status**: Completed
 - **Updated at**: 2026-05-02
 
@@ -62,4 +62,21 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
   - `index.html`
   - `vite.config.js`
   - `style.css`
+
+### 2026-05-02 — Part 4: Implement Skills
+
+- **Done**:
+  - Implement skill runtime: projectiles, mines, AoE, buffs, passives.
+  - Status effects: burn/slow/stun (tick + stacking).
+  - Skill definitions JSON + registry loading.
+- **Demo (fallback presets)**: nếu chưa chọn balls từ Builder, Arena sẽ gán skills mẫu để thấy skill chạy ngay.
+- **Key files**:
+  - `src/entities/Projectile.js`
+  - `src/entities/Mine.js`
+  - `src/entities/Ball.js`
+  - `src/engine/Game.js`
+  - `src/engine/Physics.js`
+  - `src/skills/types/*`
+  - `src/skills/definitions/*`
+  - `src/main.js`
 

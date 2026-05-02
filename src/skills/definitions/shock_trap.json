@@ -1,0 +1,14 @@
+{
+  "id": "shock_trap",
+  "name": "⚡ Shock Trap",
+  "description": "Mìn điện gây damage + stun",
+  "type": "mine",
+  "cooldown": 5200,
+  "damage": 420,
+  "triggerRadius": 36,
+  "duration": 12000,
+  "debuff": { "type": "stun", "duration": 700 },
+  "effect": { "color": "0x38bdf8", "radius": 8 },
+  "ai": { "priority": 3 }
+}
+

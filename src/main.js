@@ -89,11 +89,13 @@ function prepareNextMatch() {
     name: BALL_PRESETS[aIdx].name,
     skin: { fill: BALL_PRESETS[aIdx].fill, glow: BALL_PRESETS[aIdx].glow },
     stats: { atk: 100, def: 40, speed: 1.0, maxHp: 10000 },
+    skills: ['fireball', 'rage'],
   };
   _preparedB = {
     name: BALL_PRESETS[bIdx].name,
     skin: { fill: BALL_PRESETS[bIdx].fill, glow: BALL_PRESETS[bIdx].glow },
     stats: { atk: 120, def: 30, speed: 1.2, maxHp: 8000 },
+    skills: ['ice_shard', 'shockwave', 'regen'],
   };
 }
 
