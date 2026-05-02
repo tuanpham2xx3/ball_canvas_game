@@ -141,6 +141,55 @@ h1 {
   min-width: 220px;
 }
 
+.match-picker .picker.wide {
+  min-width: min(720px, 94vw);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.select.small {
+  padding: 8px 10px;
+}
+
+.btn.small {
+  padding: 8px 10px;
+}
+
+.toggle.compact {
+  padding: 8px 10px;
+}
+
+.meta {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.history {
+  display: grid;
+  gap: 8px;
+}
+
+.history .item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(10, 10, 26, 0.35);
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.history .item .sub {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .match-picker label {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -361,9 +410,13 @@ h1 {
   #controls {
     flex-wrap: wrap;
   }
-  #controls button {
+  #controls button,
+  #controls .link-btn {
     flex: 1;
     min-width: 100px;
+  }
+  .match-picker .picker {
+    min-width: min(92vw, 520px);
   }
 }
 

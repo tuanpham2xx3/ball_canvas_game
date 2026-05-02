@@ -20,6 +20,47 @@
       <button id="btn-reset" title="New match">🔄 Reset</button>
       <button id="btn-gravity" title="Toggle gravity">🌍 Gravity: ON</button>
     </div>
+
+    <div class="match-picker" aria-label="Spectator controls">
+      <div class="picker">
+        <label>Spectator</label>
+        <div class="row">
+          <button id="btn-pause" class="btn small">⏸ Pause</button>
+          <select id="sel-speed" class="select small" title="Speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+          </select>
+        </div>
+      </div>
+      <div class="picker">
+        <label>Tournament (Bo3)</label>
+        <div class="row">
+          <label class="toggle compact">
+            <input id="chk-bo3" type="checkbox" />
+            <span>Enable</span>
+          </label>
+          <button id="btn-series-reset" class="btn small">Reset</button>
+        </div>
+        <div id="series-score" class="meta">A 0 — 0 B</div>
+      </div>
+      <div class="picker">
+        <label>Sound</label>
+        <label class="toggle compact">
+          <input id="chk-sfx" type="checkbox" checked />
+          <span>SFX</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="match-picker" aria-label="Match history">
+      <div class="picker wide">
+        <label>Match History</label>
+        <div id="match-history" class="history"></div>
+      </div>
+    </div>
     <div id="match-picker" class="match-picker" aria-label="Match picker">
       <div class="picker">
         <label for="sel-a">Ball A</label>

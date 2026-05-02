@@ -41,6 +41,8 @@ export class Game {
     this.damageText = null;
     this.skillRegistry = new SkillRegistry();
     this.vfx = null;
+    this.paused = false;
+    this.timeScale = 1;
 
     /** @type {Ball[]} */
     this.balls = [];
@@ -199,11 +201,12 @@ export class Game {
    * Main game loop.
    */
   _gameLoop(ticker) {
-    const dt = ticker.deltaMS;
+    const rawDt = ticker.deltaMS;
+    const dt = rawDt * this.timeScale;
 
     // Countdown phase (no physics updates)
     if (this.state === STATE.STARTING) {
-      this._countdownRemainingMs -= dt;
+      if (!this.paused) this._countdownRemainingMs -= dt;
       const secs = Math.max(0, Math.ceil(this._countdownRemainingMs / 1000));
       this._updateCountdownOverlay(secs);
       this.eventBus.emit('countdown', { secondsLeft: secs });
@@ -217,6 +220,11 @@ export class Game {
     }
 
     if (this.state !== STATE.PLAYING) return;
+    if (this.paused) {
+      // Keep VFX stable (no dt) to avoid leaking effects while paused
+      this.vfx.update(0);
+      return;
+    }
 
     // Physics update
     this.physics.update(this.balls, dt);
@@ -529,5 +537,15 @@ export class Game {
     this.reset();
     this.eventBus.clear();
     this.app.destroy(true);
+  }
+
+  setPaused(on) {
+    this.paused = Boolean(on);
+  }
+
+  setTimeScale(scale) {
+    const s = Number(scale);
+    if (!Number.isFinite(s)) return;
+    this.timeScale = Math.max(0.25, Math.min(4, s));
   }
 }

@@ -13,7 +13,7 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 
 ## Current phase
 
-- **Phase**: Part 6 — Skin System
+- **Phase**: Part 7 — Polish
 - **Status**: Completed
 - **Updated at**: 2026-05-03
 
@@ -103,4 +103,19 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
   - `src/vfx/VFXManager.js`
   - `src/engine/Game.js`
   - `style.css`
+
+### 2026-05-03 — Part 7: Polish
+
+- **Done**:
+  - Spectator controls: pause/resume + speed control.
+  - Tournament mode: best-of-3 scoreboard.
+  - Match history: lưu + hiển thị kết quả gần đây (localStorage).
+  - Sound effects: collision/skill/victory + toggle.
+  - Responsive polish cho các panel mới.
+- **Key files**:
+  - `index.html`
+  - `style.css`
+  - `src/main.js`
+  - `src/engine/Game.js`
+  - `src/audio/SoundManager.js`
 

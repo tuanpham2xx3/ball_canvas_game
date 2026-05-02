@@ -5,17 +5,24 @@
 import { Game } from './engine/Game.js';
 import { BALL_PRESETS, GAME, PHYSICS } from './config.js';
 import { loadSavedBalls } from './ui/Builder.js';
+import { SoundManager } from './audio/SoundManager.js';
 
 let game = null;
 let matchSeed = 0;
+let sfx = null;
 
 const STORAGE_SELECTED_A = 'ballsArena.match.selectedA';
 const STORAGE_SELECTED_B = 'ballsArena.match.selectedB';
+const STORAGE_HISTORY = 'ballsArena.history.v1';
+const STORAGE_BO3 = 'ballsArena.tournament.bo3';
+const STORAGE_SERIES = 'ballsArena.series.v1';
 
 async function init() {
   const container = document.getElementById('game-container');
   game = new Game(container);
   await game.init();
+
+  sfx = new SoundManager();
 
   // Build initial match configs but do not auto-start (Part 1 state flow)
   hydrateMatchPicker();
@@ -23,7 +30,13 @@ async function init() {
 
   // --- Controls ---
   const startBtn = document.getElementById('btn-start');
+  const pauseBtn = document.getElementById('btn-pause');
+  const speedSel = document.getElementById('sel-speed');
+  const chkSfx = document.getElementById('chk-sfx');
+  const chkBo3 = document.getElementById('chk-bo3');
+  const seriesResetBtn = document.getElementById('btn-series-reset');
   document.getElementById('btn-reset').addEventListener('click', () => {
+    resetSeriesIfDisabled();
     prepareNextMatch();
     startMatchFromPrepared();
   });
@@ -43,6 +56,36 @@ async function init() {
     startMatchFromPrepared();
   });
 
+  pauseBtn?.addEventListener('click', () => {
+    game.setPaused(!game.paused);
+    pauseBtn.textContent = game.paused ? '▶ Resume' : '⏸ Pause';
+  });
+
+  speedSel?.addEventListener('change', () => {
+    game.setTimeScale(Number(speedSel.value) || 1);
+  });
+
+  if (chkSfx) {
+    chkSfx.checked = sfx.getEnabled();
+    chkSfx.addEventListener('change', () => sfx.setEnabled(chkSfx.checked));
+  }
+
+  if (chkBo3) {
+    chkBo3.checked = localStorage.getItem(STORAGE_BO3) === '1';
+    chkBo3.addEventListener('change', () => {
+      localStorage.setItem(STORAGE_BO3, chkBo3.checked ? '1' : '0');
+      if (!chkBo3.checked) seriesReset();
+      renderSeries();
+    });
+  }
+  seriesResetBtn?.addEventListener('click', () => {
+    seriesReset();
+    renderSeries();
+  });
+
+  renderHistory();
+  renderSeries();
+
   // Keep UI state in sync with game
   game.eventBus.on('matchStarting', ({ countdownMs }) => {
     const s = Math.ceil(countdownMs / 1000);
@@ -57,11 +100,132 @@ async function init() {
     startBtn.disabled = true;
     startBtn.textContent = '⚔️ Fighting...';
   });
-  game.eventBus.on('gameOver', () => {
+  game.eventBus.on('collision', ({ dmgToA, dmgToB }) => {
+    const big = Math.max(dmgToA || 0, dmgToB || 0);
+    if (big > 0) sfx.collision(Math.min(1, big / 900));
+  });
+  game.eventBus.on('skillHit', ({ amount }) => {
+    if (amount > 0) sfx.skill(Math.min(1, amount / 900));
+  });
+
+  game.eventBus.on('gameOver', ({ winner, loser }) => {
     startBtn.disabled = false;
     startBtn.textContent = '▶ Rematch';
+
+    sfx.victory();
+
+    // History
+    pushHistory({
+      at: Date.now(),
+      winner: winner?.name || 'Draw',
+      loser: loser?.name || '',
+      a: summarizeBall(game.balls[0]),
+      b: summarizeBall(game.balls[1]),
+    });
+    renderHistory();
+
+    // Tournament Bo3
+    if (localStorage.getItem(STORAGE_BO3) === '1') {
+      seriesApplyResult(winner?.id || null, game.balls[0], game.balls[1]);
+      renderSeries();
+      if (seriesIsComplete()) startBtn.textContent = '🏁 Series Done';
+    }
+
     prepareNextMatch();
   });
+}
+
+function summarizeBall(ball) {
+  if (!ball) return null;
+  return {
+    id: ball.id,
+    name: ball.name,
+    hp: ball.hp,
+    maxHp: ball.maxHp,
+    hits: ball.hits,
+    damageDealt: ball.damageDealt,
+    damageTaken: ball.damageTaken,
+  };
+}
+
+function readHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_HISTORY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushHistory(entry) {
+  const list = readHistory();
+  list.unshift(entry);
+  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(list.slice(0, 12)));
+}
+
+function renderHistory() {
+  const el = document.getElementById('match-history');
+  if (!el) return;
+  const list = readHistory();
+  el.innerHTML = '';
+  if (!list.length) {
+    el.innerHTML = `<div class="item"><div><b>No matches yet</b></div><div class="sub">Play a match to see history.</div></div>`;
+    return;
+  }
+  for (const m of list) {
+    const d = new Date(m.at);
+    const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = `
+      <div><b>${m.winner}</b> won ${m.loser ? `vs ${m.loser}` : ''} <span class="sub">• ${time}</span></div>
+      <div class="sub">${m.a?.name}: ${m.a?.damageDealt ?? 0} dmg • ${m.b?.name}: ${m.b?.damageDealt ?? 0} dmg</div>
+    `;
+    el.appendChild(item);
+  }
+}
+
+function seriesRead() {
+  try {
+    const raw = localStorage.getItem(STORAGE_SERIES);
+    const s = raw ? JSON.parse(raw) : null;
+    return s && typeof s === 'object' ? s : { aWins: 0, bWins: 0, rounds: 0 };
+  } catch {
+    return { aWins: 0, bWins: 0, rounds: 0 };
+  }
+}
+
+function seriesWrite(s) {
+  localStorage.setItem(STORAGE_SERIES, JSON.stringify(s));
+}
+
+function seriesReset() {
+  seriesWrite({ aWins: 0, bWins: 0, rounds: 0 });
+}
+
+function resetSeriesIfDisabled() {
+  if (localStorage.getItem(STORAGE_BO3) !== '1') seriesReset();
+}
+
+function seriesApplyResult(winnerId, ballA, ballB) {
+  const s = seriesRead();
+  s.rounds += 1;
+  if (winnerId && ballA?.id === winnerId) s.aWins += 1;
+  else if (winnerId && ballB?.id === winnerId) s.bWins += 1;
+  seriesWrite(s);
+}
+
+function seriesIsComplete() {
+  const s = seriesRead();
+  return s.aWins >= 2 || s.bWins >= 2;
+}
+
+function renderSeries() {
+  const el = document.getElementById('series-score');
+  if (!el) return;
+  const s = seriesRead();
+  el.textContent = `A ${s.aWins} — ${s.bWins} B • Rounds ${s.rounds}`;
 }
 
 let _preparedA = null;
@@ -147,7 +311,7 @@ function hydrateMatchPicker() {
 function _toMatchConfig(savedBall) {
   return {
     name: savedBall.name,
-    skin: { fill: savedBall.skin?.fill, glow: savedBall.skin?.glow },
+    skin: savedBall.skin,
     stats: {
       atk: savedBall.stats?.atk,
       def: savedBall.stats?.def,
