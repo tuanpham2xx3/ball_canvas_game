@@ -84,6 +84,17 @@ export class VFXManager {
     return e;
   }
 
+  trailForBall(ball, config = {}) {
+    const enabled = Boolean(config?.enabled);
+    if (!enabled) return null;
+    const g = new Graphics();
+    g.zIndex = 1;
+    this.container.addChild(g);
+    const e = new BallTrailEffect(g, ball, config);
+    this._effects.push(e);
+    return e;
+  }
+
   auraForBall(ball, color = 0x818cf8) {
     const g = new Graphics();
     g.zIndex = 2;
@@ -200,6 +211,40 @@ class AuraEffect {
   }
 }
 
+class BallTrailEffect {
+  constructor(g, ball, config) {
+    this.g = g;
+    this.ball = ball;
+    this.isDone = false;
+    this._pts = [];
+    this._max = Math.max(4, Math.min(24, Number(config.length) || 12));
+    this._color = parseColor(config.color, ball?.skin?.glow ?? 0x818cf8);
+  }
+  update(dt) {
+    void dt;
+    if (!this.ball?.isAlive) {
+      this._max = Math.max(0, this._max - 2);
+      if (this._max <= 0) this.isDone = true;
+    } else {
+      this._pts.push({ x: this.ball.x, y: this.ball.y });
+      while (this._pts.length > this._max) this._pts.shift();
+    }
+    this.g.clear();
+    if (this._pts.length < 2) return;
+    for (let i = 1; i < this._pts.length; i++) {
+      const a = this._pts[i - 1];
+      const b = this._pts[i];
+      const t = i / this._pts.length;
+      this.g.moveTo(a.x, a.y);
+      this.g.lineTo(b.x, b.y);
+      this.g.stroke({ color: this._color, alpha: 0.10 * t, width: 3.2 * t });
+    }
+  }
+  destroy() {
+    this.g.destroy();
+  }
+}
+
 class StatusIndicatorEffect {
   constructor(g, ball) {
     this.g = g;
@@ -242,5 +287,13 @@ class StatusIndicatorEffect {
 function dot(g, x, y, color, alpha = 0.9) {
   g.circle(x, y, 3);
   g.fill({ color, alpha });
+}
+
+function parseColor(v, fallback) {
+  if (typeof v === 'number') return v;
+  const s = String(v || '').trim();
+  if (/^0x[0-9a-fA-F]+$/.test(s)) return parseInt(s.slice(2), 16);
+  if (/^#[0-9a-fA-F]{6}$/.test(s)) return parseInt(s.slice(1), 16);
+  return fallback;
 }
 

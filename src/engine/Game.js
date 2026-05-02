@@ -145,6 +145,8 @@ export class Game {
     // Always-on indicators
     this.vfx.statusIndicator(ball);
     this.vfx.auraForBall(ball, ball.skin.glow);
+    // Skin trail (Part 6)
+    this.vfx.trailForBall(ball, ball.skin?.trail || {});
     return ball;
   }
 

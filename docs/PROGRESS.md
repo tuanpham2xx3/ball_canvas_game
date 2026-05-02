@@ -13,7 +13,7 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 
 ## Current phase
 
-- **Phase**: Part 5 — Visual Effects
+- **Phase**: Part 6 — Skin System
 - **Status**: Completed
 - **Updated at**: 2026-05-03
 
@@ -89,4 +89,18 @@ File này dùng để **note lại những thứ đã hoàn thành** theo từng
 - **Key files**:
   - `src/vfx/VFXManager.js`
   - `src/engine/Game.js`
+
+### 2026-05-03 — Part 6: Skin System
+
+- **Done**:
+  - Skin schema mở rộng: gradient, pattern, trail config (backward compatible).
+  - Ball render support gradient/pattern.
+  - Builder có skin picker (gradient/pattern/trail) và persist qua localStorage + export/import.
+  - Ball trail VFX theo `skin.trail`.
+- **Key files**:
+  - `src/entities/Ball.js`
+  - `src/ui/Builder.js`
+  - `src/vfx/VFXManager.js`
+  - `src/engine/Game.js`
+  - `style.css`
 

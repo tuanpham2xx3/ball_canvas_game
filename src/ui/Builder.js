@@ -96,6 +96,54 @@ export class Builder {
 
       <div class="builder-row two">
         <div>
+          <label>Gradient</label>
+          <label class="toggle">
+            <input id="b-grad-on" type="checkbox" />
+            <span>Enable</span>
+          </label>
+        </div>
+        <div>
+          <label>Pattern</label>
+          <select id="b-pattern" class="select">
+            <option value="none">None</option>
+            <option value="dots">Dots</option>
+            <option value="stripes">Stripes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="builder-row two">
+        <div>
+          <label>Gradient Inner</label>
+          <input id="b-grad-inner" class="input" type="color" />
+        </div>
+        <div>
+          <label>Gradient Outer</label>
+          <input id="b-grad-outer" class="input" type="color" />
+        </div>
+      </div>
+
+      <div class="builder-row two">
+        <div>
+          <label>Trail</label>
+          <label class="toggle">
+            <input id="b-trail-on" type="checkbox" />
+            <span>Enable</span>
+          </label>
+        </div>
+        <div>
+          <label>Trail Length</label>
+          <input id="b-trail-len" class="input" type="number" min="4" step="1" />
+        </div>
+      </div>
+
+      <div class="builder-row">
+        <label>Trail Color</label>
+        <input id="b-trail-color" class="input" type="color" />
+      </div>
+
+      <div class="builder-row two">
+        <div>
           <label>Max HP</label>
           <input id="b-hp" class="input" type="number" min="1" step="1" />
         </div>
@@ -168,6 +216,13 @@ export class Builder {
       name: editorEl.querySelector('#b-name'),
       fill: editorEl.querySelector('#b-fill'),
       glow: editorEl.querySelector('#b-glow'),
+      gradOn: editorEl.querySelector('#b-grad-on'),
+      gradInner: editorEl.querySelector('#b-grad-inner'),
+      gradOuter: editorEl.querySelector('#b-grad-outer'),
+      pattern: editorEl.querySelector('#b-pattern'),
+      trailOn: editorEl.querySelector('#b-trail-on'),
+      trailLen: editorEl.querySelector('#b-trail-len'),
+      trailColor: editorEl.querySelector('#b-trail-color'),
       hp: editorEl.querySelector('#b-hp'),
       radius: editorEl.querySelector('#b-radius'),
       atk: editorEl.querySelector('#b-atk'),
@@ -219,6 +274,19 @@ export class Builder {
       skin: {
         fill: colorToHexInt(this._els.fill.value),
         glow: colorToHexInt(this._els.glow.value),
+        gradient: {
+          enabled: Boolean(this._els.gradOn.checked),
+          inner: colorToHexInt(this._els.gradInner.value),
+          outer: colorToHexInt(this._els.gradOuter.value),
+        },
+        pattern: {
+          type: this._els.pattern.value || 'none',
+        },
+        trail: {
+          enabled: Boolean(this._els.trailOn.checked),
+          length: clampNumber(this._els.trailLen.value, 4, 24, 12),
+          color: colorToHexInt(this._els.trailColor.value),
+        },
       },
       stats,
       // Part 3: skills not wired yet; keep schema placeholder
@@ -230,12 +298,20 @@ export class Builder {
     const b = ball || {
       id: null,
       name: '',
-      skin: { fill: 0x818cf8, glow: 0x6366f1 },
+      skin: { fill: 0x818cf8, glow: 0x6366f1, gradient: { enabled: false, inner: 0x818cf8, outer: 0x818cf8 }, pattern: { type: 'none' }, trail: { enabled: false, length: 12, color: 0x6366f1 } },
       stats: { ...DEFAULT_BALL_STATS },
     };
     this._els?.name && (this._els.name.value = b.name || '');
     this._els?.fill && (this._els.fill.value = hexIntToCssColor(b.skin?.fill ?? 0x818cf8));
     this._els?.glow && (this._els.glow.value = hexIntToCssColor(b.skin?.glow ?? 0x6366f1));
+
+    this._els?.gradOn && (this._els.gradOn.checked = Boolean(b.skin?.gradient?.enabled));
+    this._els?.gradInner && (this._els.gradInner.value = hexIntToCssColor(b.skin?.gradient?.inner ?? b.skin?.fill ?? 0x818cf8));
+    this._els?.gradOuter && (this._els.gradOuter.value = hexIntToCssColor(b.skin?.gradient?.outer ?? b.skin?.fill ?? 0x818cf8));
+    this._els?.pattern && (this._els.pattern.value = b.skin?.pattern?.type || 'none');
+    this._els?.trailOn && (this._els.trailOn.checked = Boolean(b.skin?.trail?.enabled));
+    this._els?.trailLen && (this._els.trailLen.value = b.skin?.trail?.length ?? 12);
+    this._els?.trailColor && (this._els.trailColor.value = hexIntToCssColor(b.skin?.trail?.color ?? b.skin?.glow ?? 0x6366f1));
 
     this._els?.hp && (this._els.hp.value = b.stats?.maxHp ?? DEFAULT_BALL_STATS.maxHp);
     this._els?.radius && (this._els.radius.value = b.stats?.radius ?? DEFAULT_BALL_STATS.radius);
@@ -361,6 +437,19 @@ export class Builder {
         skin: {
           fill: Number(raw.skin?.fill) || 0x818cf8,
           glow: Number(raw.skin?.glow) || 0x6366f1,
+          gradient: {
+            enabled: Boolean(raw.skin?.gradient?.enabled),
+            inner: Number(raw.skin?.gradient?.inner) || Number(raw.skin?.fill) || 0x818cf8,
+            outer: Number(raw.skin?.gradient?.outer) || Number(raw.skin?.fill) || 0x818cf8,
+          },
+          pattern: {
+            type: raw.skin?.pattern?.type || 'none',
+          },
+          trail: {
+            enabled: Boolean(raw.skin?.trail?.enabled),
+            length: clampNumber(raw.skin?.trail?.length, 4, 24, 12),
+            color: Number(raw.skin?.trail?.color) || Number(raw.skin?.glow) || 0x6366f1,
+          },
         },
         stats: {
           maxHp: clampNumber(raw.stats?.maxHp, 1, 999999, DEFAULT_BALL_STATS.maxHp),

@@ -227,6 +227,21 @@ h1 {
   color: var(--text-muted);
 }
 
+.toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.26);
+  background: rgba(10, 10, 26, 0.55);
+  color: var(--text-primary);
+}
+
+.toggle input {
+  accent-color: var(--accent);
+}
+
 .builder-actions {
   display: flex;
   gap: 10px;

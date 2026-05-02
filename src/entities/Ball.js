@@ -89,10 +89,16 @@ export class Ball {
 
     // Main body
     const body = new Graphics();
-    body.circle(0, 0, r);
-    body.fill(this.skin.fill);
+    // Skin system (Part 6): solid / gradient + optional pattern overlay
+    drawBallFill(body, r, this.skin);
     this.container.addChild(body);
     this._body = body;
+
+    // Pattern overlay (optional)
+    const pattern = new Graphics();
+    drawBallPattern(pattern, r, this.skin);
+    this.container.addChild(pattern);
+    this._pattern = pattern;
 
     // Highlight
     const highlight = new Graphics();
@@ -376,4 +382,90 @@ function clampMul(v, min, max) {
   const x = Number(v);
   if (!Number.isFinite(x)) return 1;
   return Math.min(max, Math.max(min, x));
+}
+
+function drawBallFill(g, r, skin) {
+  g.clear();
+  const grad = skin?.gradient;
+  const enabled = Boolean(grad?.enabled);
+
+  if (!enabled) {
+    g.circle(0, 0, r);
+    g.fill(skin?.fill ?? 0x818cf8);
+    return;
+  }
+
+  const inner = Number(grad?.inner ?? skin?.fill ?? 0x818cf8);
+  const outer = Number(grad?.outer ?? skin?.fill ?? 0x818cf8);
+
+  // Approx radial gradient via concentric circles (cheap + good enough)
+  const steps = 14;
+  for (let i = steps; i >= 1; i--) {
+    const t = i / steps;
+    const col = lerpColor(inner, outer, 1 - t);
+    g.circle(0, 0, r * t);
+    g.fill(col);
+  }
+}
+
+function drawBallPattern(g, r, skin) {
+  g.clear();
+  const type = skin?.pattern?.type || 'none';
+  if (type === 'none') return;
+
+  if (type === 'dots') {
+    // seeded-ish random based on name
+    const seed = hash32(String(skin?.pattern?.seed ?? 'dots'));
+    let s = seed;
+    const rand = () => {
+      // xorshift32
+      s ^= s << 13;
+      s ^= s >> 17;
+      s ^= s << 5;
+      return ((s >>> 0) % 10000) / 10000;
+    };
+    const count = 12;
+    for (let i = 0; i < count; i++) {
+      const ang = rand() * Math.PI * 2;
+      const rr = (0.15 + rand() * 0.75) * r;
+      const x = Math.cos(ang) * rr;
+      const y = Math.sin(ang) * rr;
+      g.circle(x, y, 2 + rand() * 2.2);
+      g.fill({ color: 0xffffff, alpha: 0.12 });
+    }
+  }
+
+  if (type === 'stripes') {
+    const w = 2;
+    for (let x = -r * 1.2; x < r * 1.2; x += 6) {
+      g.moveTo(x, -r * 1.2);
+      g.lineTo(x + r * 1.2, r * 1.2);
+      g.stroke({ color: 0xffffff, alpha: 0.08, width: w });
+    }
+  }
+
+  // Clip pattern to circle by drawing a mask-ish circle with destination-in isn't available,
+  // so we rely on low alpha and staying roughly inside bounds.
+}
+
+function lerpColor(a, b, t) {
+  const ar = (a >> 16) & 255;
+  const ag = (a >> 8) & 255;
+  const ab = a & 255;
+  const br = (b >> 16) & 255;
+  const bg = (b >> 8) & 255;
+  const bb = b & 255;
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  return (rr << 16) | (rg << 8) | rb;
+}
+
+function hash32(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }
